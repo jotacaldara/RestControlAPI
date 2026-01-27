@@ -16,27 +16,36 @@ public class RestaurantsController : ControllerBase
 
     // GET: api/restaurants?city=Lisboa
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<RestaurantListDto>>> GetRestaurants(string? city = null)
+    public async Task<ActionResult<IEnumerable<RestaurantListDTO>>> GetRestaurants(string? city = null)
     {
-        var query = _context.Restaurants
-            .Include(r => r.RestaurantImages)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(city))
+        try
         {
-            query = query.Where(r => r.City.Contains(city));
+            var query = _context.Restaurants
+                .Include(r => r.RestaurantImages)
+                .AsNoTracking() 
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(city))
+            {
+                var searchCity = city.Trim().ToUpper();
+                query = query.Where(r => r.City != null && r.City.ToUpper().Contains(searchCity));
+            }
+
+            var result = await query.Select(r => new RestaurantListDTO
+            {
+                Id = r.RestaurantId,
+                Name = r.Name,
+                City = r.City ?? "Cidade não informada",
+                Description = r.Description,
+                ImageUrl = r.RestaurantImages.Select(i => i.ImageUrl).FirstOrDefault() ?? "default.jpg"
+            }).ToListAsync();
+
+            return Ok(result);
         }
-
-        var result = await query.Select(r => new RestaurantListDto
+        catch (Exception ex)
         {
-            Id = r.RestaurantId,
-            Name = r.Name,
-            City = r.City,
-            Description = r.Description,
-            ImageUrl = r.RestaurantImages.Any() ? r.RestaurantImages.First().ImageUrl : "default.jpg"
-        }).ToListAsync();
-
-        return Ok(result);
+            return StatusCode(500, $"Erro interno: {ex.Message}");
+        }
     }
 
     // GET: api/restaurants/5 (Detalhes com Menu)

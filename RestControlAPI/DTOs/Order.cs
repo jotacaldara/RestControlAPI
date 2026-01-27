@@ -23,7 +23,7 @@
         public int TableNumber { get; set; }
         public string WaiterName { get; set; }
         public decimal TotalAmount { get; set; }
-        public List<OrderItemDto> Items { get; set; }
+        public List<OrderItemDTO> Items { get; set; }
     }
 
     public class OrderItemDTO

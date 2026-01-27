@@ -1,6 +1,6 @@
 ﻿namespace RestControlAPI.DTOs
 {
-    public class RestaurantListDto
+    public class RestaurantListDTO
     {
         public int Id { get; set; }
         public string Name { get; set; }

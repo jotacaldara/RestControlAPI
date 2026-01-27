@@ -15,7 +15,7 @@ public class ReservationsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateReservation(CreateReservationDto dto)
+    public async Task<IActionResult> CreateReservation(CreateReservationDTO dto)
     {
         var restaurant = await _context.Restaurants.FindAsync(dto.RestaurantId);
         if (restaurant == null) return NotFound("Restaurante não encontrado.");

@@ -13,10 +13,6 @@ public partial class nextlayerapps_SampleDBContext : DbContext
     {
     }
 
-    public nextlayerapps_SampleDBContext()
-    {
-    }
-
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Order> Orders { get; set; }
@@ -42,6 +38,8 @@ public partial class nextlayerapps_SampleDBContext : DbContext
     public virtual DbSet<RestaurantImage> RestaurantImages { get; set; }
 
     public virtual DbSet<RestaurantSubscription> RestaurantSubscriptions { get; set; }
+
+    public virtual DbSet<Review> Reviews { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
 
@@ -278,6 +276,26 @@ public partial class nextlayerapps_SampleDBContext : DbContext
                 .HasForeignKey(d => d.RestaurantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Subscriptions_Restaurants");
+        });
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.Property(e => e.Comment)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Reservation).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.ReservationId)
+                .HasConstraintName("FK_Reviews_Reservations");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.RestaurantId)
+                .HasConstraintName("FK_Reviews_Restaurants");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Reviews)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_Reviews_Users");
         });
 
         modelBuilder.Entity<Role>(entity =>

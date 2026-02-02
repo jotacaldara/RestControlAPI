@@ -71,6 +71,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[Reviews]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Roles]",
          "ObjectType": 0
       },

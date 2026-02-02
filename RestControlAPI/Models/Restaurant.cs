@@ -43,6 +43,8 @@ public partial class Restaurant
 
     public virtual ICollection<RestaurantSubscription> RestaurantSubscriptions { get; set; } = new List<RestaurantSubscription>();
 
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
     public virtual ICollection<Staff> Staff { get; set; } = new List<Staff>();
 
     public virtual ICollection<Table> Tables { get; set; } = new List<Table>();

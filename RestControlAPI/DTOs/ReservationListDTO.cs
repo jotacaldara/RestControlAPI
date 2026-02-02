@@ -1,4 +1,6 @@
-﻿namespace RestControlAPI.DTOs
+﻿using System.Text.Json.Serialization;
+
+namespace RestControlAPI.DTOs
 {
     public class ReservationListDTO
     {
@@ -7,5 +9,8 @@
         public DateTime ReservationDate { get; set; }
         public int NumberOfPeople { get; set; }
         public string Status { get; set; } = "Pending";
+
+        [JsonPropertyName("isReviewed")]
+        public bool IsReviewed { get; set; }
     }
 }

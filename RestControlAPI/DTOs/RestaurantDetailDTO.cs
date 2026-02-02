@@ -9,8 +9,14 @@
         public string City { get; set; }
         public string Phone { get; set; }
 
+        public decimal AverageRating { get; set; }
+
+        public int TotalReviews { get; set; }
+
         public List<string> Images { get; set; } = new();
         public List<CategoryDTO> MenuCategories { get; set; } = new();
+
+
     }
 
     public class CategoryDTO

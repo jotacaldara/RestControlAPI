@@ -30,4 +30,6 @@ public partial class Reservation
     public virtual ICollection<ReservationTable> ReservationTables { get; set; } = new List<ReservationTable>();
 
     public virtual Restaurant Restaurant { get; set; }
+
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

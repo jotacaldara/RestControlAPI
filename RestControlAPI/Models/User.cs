@@ -27,6 +27,8 @@ public partial class User
 
     public virtual ICollection<Restaurant> Restaurants { get; set; } = new List<Restaurant>();
 
+    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+
     public virtual Role Role { get; set; }
 
     public virtual ICollection<Staff> Staff { get; set; } = new List<Staff>();

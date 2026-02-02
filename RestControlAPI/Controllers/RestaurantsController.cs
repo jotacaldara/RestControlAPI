@@ -37,7 +37,9 @@ public class RestaurantsController : ControllerBase
                 Name = r.Name,
                 City = r.City ?? "Cidade não informada",
                 Description = r.Description,
-                ImageUrl = r.RestaurantImages.Select(i => i.ImageUrl).FirstOrDefault() ?? "default.jpg"
+                ImageUrl = r.RestaurantImages.Select(i => i.ImageUrl).FirstOrDefault() ?? "default.jpg",
+                AverageRating = r.Reviews.Any() ? (decimal)r.Reviews.Average(rev => rev.Rating) : 0,
+                TotalReviews = r.Reviews.Count()
             }).ToListAsync();
 
             return Ok(result);
@@ -58,6 +60,10 @@ public class RestaurantsController : ControllerBase
                 .ThenInclude(c => c.Products) // Produtos dentro das Categorias
             .FirstOrDefaultAsync(r => r.RestaurantId == id);
 
+        var reviews = await _context.Reviews.Where(r => r.RestaurantId == id).ToListAsync();
+        double average = reviews.Any() ? reviews.Average(r => r.Rating) : 0;
+        int total = reviews.Count;
+
         if (restaurant == null) return NotFound();
 
         // Mapeamento manual para o DTO
@@ -70,6 +76,8 @@ public class RestaurantsController : ControllerBase
             City = restaurant.City,
             Phone = restaurant.Phone,
             Images = restaurant.RestaurantImages.Select(i => i.ImageUrl).ToList(),
+            AverageRating = (decimal)average,
+            TotalReviews = total,
             MenuCategories = restaurant.Categories.Select(c => new CategoryDTO
             {
                 Name = c.Name,

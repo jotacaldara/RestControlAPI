@@ -64,10 +64,25 @@ public class ReservationsController : ControllerBase
                 RestaurantName = r.Restaurant.Name,
                 Date = r.ReservationDate,
                 People = r.NumberOfPeople,
-                Status = r.Status
+                Status = r.Status,
+                IsReviewed = _context.Reviews.Any(rev => rev.ReservationId == r.ReservationId)
             })
             .ToListAsync();
 
         return Ok(reservations);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var reservation = await _context.Reservations.FindAsync(id);
+        if (reservation == null) return NotFound();
+
+        reservation.Status = "Canceled";
+
+        _context.Reservations.Update(reservation);
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
 }

@@ -65,4 +65,6 @@ public class AdminDashboardController : ControllerBase
 
         return Ok(new { message = "Restaurante aprovado e ativo na plataforma." });
     }
+
+
 }

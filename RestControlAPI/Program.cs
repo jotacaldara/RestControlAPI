@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RestControlAPI.Models;
+using RestControlAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddDbContext<nextlayerapps_SampleDBContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 builder.Services.AddCors(options =>
@@ -22,6 +24,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
 
 if (app.Environment.IsDevelopment())
 {

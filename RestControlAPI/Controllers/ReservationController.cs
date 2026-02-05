@@ -85,4 +85,38 @@ public class ReservationsController : ControllerBase
 
         return Ok();
     }
+
+    // POST: api/reservations/complete/{id}
+    [HttpPost("complete/{id}")]
+    public async Task<IActionResult> CompleteReservation(int id, [FromQuery] decimal finalAmount)
+    {
+        // 1. Encontra a reserva
+        var reservation = await _context.Reservations.FindAsync(id);
+
+        if (reservation == null) return NotFound("Reserva não encontrada.");
+
+        if (reservation.Status == "Completed")
+            return BadRequest("Esta reserva já foi finalizada.");
+
+        reservation.Status = "Completed";
+        decimal platformCommission = finalAmount * 0.10m; // 10%
+
+        var earning = new PlatformEarning
+        {
+            RestaurantId = reservation.RestaurantId,
+            ReservationId = reservation.ReservationId,
+            Amount = platformCommission,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.PlatformEarnings.Add(earning);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Message = "Reserva concluída com sucesso.",
+            PlatformProfit = platformCommission
+        });
+    }
 }

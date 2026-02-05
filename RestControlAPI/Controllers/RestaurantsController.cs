@@ -93,4 +93,44 @@ public class RestaurantsController : ControllerBase
 
         return Ok(dto);
     }
+
+    [HttpPost("deactivate/{id}")]
+    public async Task<IActionResult> DeactivateRestaurant(int id)
+    {
+        var restaurant = await _context.Restaurants.FindAsync(id);
+        if (restaurant == null) return NotFound();
+
+        restaurant.IsActive = false; 
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+
+    // PUT para editar informações básicas do restaurante (Admin)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutRestaurant(int id, RestaurantDetailDto dto)
+    {
+        if (id != dto.Id) return BadRequest();
+
+        var restaurant = await _context.Restaurants.FindAsync(id);
+        if (restaurant == null) return NotFound();
+
+        // Atualiza apenas os campos básicos permitidos pelo Admin
+        restaurant.Name = dto.Name;
+        restaurant.Description = dto.Description;
+        restaurant.Address = dto.Address;
+        restaurant.City = dto.City;
+        restaurant.Phone = dto.Phone;
+
+        _context.Entry(restaurant).State = EntityState.Modified;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(true);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Erro ao atualizar no banco de dados.");
+        }
+    }
 }

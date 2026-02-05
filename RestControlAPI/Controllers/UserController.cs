@@ -38,19 +38,17 @@ namespace RestControlAPI.Controllers
             }
             catch (Exception ex)
             {
-                // Se houver erro na DB, a API avisará
                 return StatusCode(500, $"Erro na API: {ex.Message}");
             }
         }
 
-        // POST: api/users (Criação via Registo)
+   
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] RegisterDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                 return BadRequest("Este e-mail já está em uso.");
 
-            // Busca a Role correspondente (ex: 1 para Admin, 2 para Client)
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == dto.RoleId.ToString());
             if (role == null) return BadRequest("Role inválida.");
 
@@ -58,16 +56,59 @@ namespace RestControlAPI.Controllers
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                PasswordHash = dto.Password, // Nota: Use hashing em produção
+                PasswordHash = dto.Password, 
                 RoleId = role.RoleId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(newUser);
-            await _context.SaveChangesAsync(); // Método SaveAsync do seu DbContext
+            await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Utilizador criado com sucesso!" });
+        }
+
+        // GET: api/user/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<User>> GetUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+            return Ok(user);
+        }
+
+        // PUT: api/user/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, User user)
+        {
+            if (id != user.UserId) return BadRequest();
+
+            _context.Entry(user).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Users.Any(e => e.UserId == id)) return NotFound();
+                throw;
+            }
+
+            return NoContent();
+        }
+
+        // DELETE: api/user/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+            
+            _context.Users.Remove(user);
+
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

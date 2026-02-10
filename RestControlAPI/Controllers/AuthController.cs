@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestControlAPI.DTOs;
 using RestControlAPI.Models;
@@ -41,8 +42,9 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Usuário criado com sucesso!" });
     }
 
+
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponseDTO>> Login([FromBody] LoginRequestDto request)
+    public async Task<ActionResult<LoginResponseDTO>> Login([FromBody] LoginDto request)
     {
         try
         {
@@ -52,8 +54,8 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "E-mail e senha são obrigatórios." });
             }
 
-            // 2. Buscar usuário no banco
             var user = await _context.Users
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
             if (user == null)
@@ -61,7 +63,7 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "E-mail ou senha inválidos." });
             }
 
-            // 3. Verificar senha com hash
+            // 3. Verificar senha
             bool senhaValida = VerificarSenha(request.Password, user.PasswordHash);
 
             if (!senhaValida)
@@ -71,27 +73,29 @@ public class AuthController : ControllerBase
 
             // 4. Se for Owner, buscar o RestaurantId
             int? restaurantId = null;
-            if (user.Role == "Owner")
+
+            if (user.Role != null && user.Role.Name == "Owner")
             {
                 var restaurant = await _context.Restaurants
-                    .Where(r => r.OwnerId == user.UserId && r.IsActive)
+                    .Where(r => r.OwnerId == user.UserId)
                     .Select(r => r.RestaurantId)
                     .FirstOrDefaultAsync();
 
+                // Se não encontrar restaurante, restaurant será 0 
                 restaurantId = restaurant == 0 ? null : restaurant;
             }
 
             // 5. Gerar o Token JWT
             string token = _jwtTokenService.GenerateToken(user, restaurantId);
 
-            // 6. Retornar resposta com o Token
+            // 6. Retornar resposta
             var response = new LoginResponseDTO
             {
                 Token = token,
                 UserId = user.UserId,
-                Name = user.Name,
+                Name = user.FullName,
                 Email = user.Email,
-                Role = user.Role,
+                Role = user.Role?.Name ?? "Cliente",
                 RestaurantId = restaurantId
             };
 
@@ -99,14 +103,20 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = $"Erro interno: {ex.Message}" });
+            return StatusCode(500, new { message = "Erro interno: " + ex.Message });
         }
+    }
+
+    [HttpPost("logout")]
+    [Authorize] // Apenas usuários logados podem invalidar sua sessão
+    public IActionResult Logout()
+    {
+
+        return Ok(new { message = "Logout realizado com sucesso. O token deve ser descartado pelo cliente." });
     }
 
     private bool VerificarSenha(string senhaDigitada, string senhaHashArmazenada)
     {
         return senhaDigitada == senhaHashArmazenada;
-
-  
     }
 }

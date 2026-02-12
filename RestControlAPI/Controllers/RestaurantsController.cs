@@ -81,9 +81,8 @@ public class RestaurantsController : ControllerBase
             MenuCategories = restaurant.Categories.Select(c => new CategoryDTO
             {
                 Name = c.Name,
-                Products = c.Products.Select(p => new ProductDTO
+                Products = c.Products.Select(p => new ProductDto
                 {
-                    Id = p.ProductId,
                     Name = p.Name,
                     Description = p.Description,
                     Price = p.Price

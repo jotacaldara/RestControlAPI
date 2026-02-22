@@ -102,13 +102,25 @@ namespace RestControlAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-            
-            _context.Users.Remove(user);
+            var user = await _context.Users
+                .Include(u => u.Restaurants) 
+                .FirstOrDefaultAsync(u => u.UserId == id);
 
-            await _context.SaveChangesAsync();
-            return NoContent();
+            if (user == null) return NotFound();
+
+            try
+            {
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+
+                return NoContent(); // Retorna 204 Success
+            }
+            catch (Exception)
+            {
+                user.IsActive = false;
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Utilizador desativado por conter histórico no sistema." });
+            }
         }
     }
 }

@@ -5,7 +5,11 @@ using RestControlAPI.Models;
 using RestControlAPI.Services;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(args);
+
+
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
 // Adicionar Contexto do Banco
 builder.Services.AddDbContext<nextlayerapps_SampleDBContext>(options =>
@@ -105,3 +109,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+}
+catch (Exception ex)
+{
+    // Isso vai fazer o erro aparecer no console antes de fechar
+    Console.WriteLine("ERRO FATAL NA API: " + ex.Message);
+    Console.WriteLine(ex.StackTrace);
+    throw;
+}

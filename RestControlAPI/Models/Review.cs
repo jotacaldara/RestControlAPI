@@ -21,6 +21,9 @@ public partial class Review
 
     public int? ReservationId { get; set; }
 
+    public string Reply { get; set; }
+    public DateTime? RepliedAt { get; set; }
+
     public virtual Reservation Reservation { get; set; }
 
     public virtual Restaurant Restaurant { get; set; }

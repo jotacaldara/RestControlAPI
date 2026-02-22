@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestControlAPI.DTOs;
 using RestControlAPI.Models;
@@ -16,18 +17,19 @@ namespace RestControlAPI.Controllers
             _context = context;
         }
 
-        // UNIFICADO: Apenas um GET para "stats"
-        // GET: api/admin/admindashboard/stats
         [HttpGet("stats")]
         public async Task<ActionResult<DashboardKpiDTO>> GetStats()
         {
+            var totalEarnings = await _context.PlatformEarnings
+               .SumAsync(e => e.Amount);
+
             var stats = new DashboardKpiDTO
             {
                 TotalRestaurants = await _context.Restaurants.CountAsync(),
                 TotalReservations = await _context.Reservations.CountAsync(),
-                // Soma os ganhos da tabela PlatformEarnings
-                TotalRevenue = await _context.PlatformEarnings.SumAsync(e => e.Amount),
-                // Lógica robusta para pendentes: false ou nulo
+              
+                TotalRevenue = totalEarnings,
+                
                 PendingApprovals = await _context.Restaurants.CountAsync(r => r.IsActive == false || r.IsActive == null)
             };
 
@@ -91,6 +93,53 @@ namespace RestControlAPI.Controllers
             }).ToList();
 
             return Ok(chartData);
+        }
+
+        // RestControlAPI/Controllers/AdminController.cs
+
+        [HttpGet("api/admin/earnings")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPlatformEarnings()
+        {
+            // Total geral
+            var totalEarnings = await _context.PlatformEarnings
+                .SumAsync(e => e.Amount);
+
+            // Por restaurante
+            var earningsByRestaurant = await _context.PlatformEarnings
+                .Include(e => e.Restaurant)
+                .GroupBy(e => new { e.RestaurantId, RestaurantName = e.Restaurant.Name })
+                .Select(g => new
+                {
+                    RestaurantId = g.Key.RestaurantId,
+                    RestaurantName = g.Key.RestaurantName,
+                    TotalEarnings = g.Sum(e => e.Amount),
+                    TotalReservations = g.Count()
+                })
+                .OrderByDescending(x => x.TotalEarnings)
+                .ToListAsync();
+
+            // Por mês (últimos 6 meses)
+            var sixMonthsAgo = DateTime.Now.AddMonths(-6);
+            var earningsByMonth = await _context.PlatformEarnings
+                .Where(e => e.CreatedAt >= sixMonthsAgo)
+                .GroupBy(e => new { e.CreatedAt.Value.Year, e.CreatedAt.Value.Month })
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    MonthName = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMMM yyyy"),
+                    Total = g.Sum(e => e.Amount)
+                })
+                .OrderBy(x => x.Year).ThenBy(x => x.Month)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                TotalEarnings = totalEarnings,
+                ByRestaurant = earningsByRestaurant,
+                ByMonth = earningsByMonth
+            });
         }
     }
 }

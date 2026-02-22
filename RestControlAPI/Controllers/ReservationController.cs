@@ -20,37 +20,32 @@ public class ReservationsController : ControllerBase
         var restaurant = await _context.Restaurants.FindAsync(dto.RestaurantId);
         if (restaurant == null) return NotFound("Restaurante não encontrado.");
 
-        
         var existingReservations = await _context.Reservations
             .Where(r => r.RestaurantId == dto.RestaurantId
                    && r.ReservationDate == dto.ReservationDate
-                   && r.Status != "Cancelled")
+                   && r.Status != "Cancelada")
             .CountAsync();
 
-
         if (existingReservations >= 20)
-        {
             return BadRequest("Desculpe, não há mesas disponíveis para este horário.");
-        }
 
-        // 3. Criar a Reserva
         var reservation = new Reservation
         {
             RestaurantId = dto.RestaurantId,
             CustomerId = dto.UserId,
             ReservationDate = dto.ReservationDate,
             NumberOfPeople = dto.NumberOfPeople,
-            Status = "Confirmed",
+            Status = "Pendente",
             CreatedAt = DateTime.Now
         };
 
         _context.Reservations.Add(reservation);
         await _context.SaveChangesAsync();
 
-        return Ok(new { reservationId = reservation.ReservationId, message = "Reserva confirmada!" });
+        return Ok(new { reservationId = reservation.ReservationId, message = "Reserva criada com sucesso!" });
     }
 
-    // GET: api/reservations/user/5 (Minhas Reservas)
+    // GET: api/reservations/user/5
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserReservations(int userId)
     {
@@ -72,34 +67,44 @@ public class ReservationsController : ControllerBase
         return Ok(reservations);
     }
 
+    // DELETE: api/reservations/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> Cancel(int id)
     {
         var reservation = await _context.Reservations.FindAsync(id);
         if (reservation == null) return NotFound();
 
-        reservation.Status = "Canceled";
-
+        reservation.Status = "Cancelada";
         _context.Reservations.Update(reservation);
         await _context.SaveChangesAsync();
 
-        return Ok();
+        return Ok(new { message = "Reserva cancelada." });
     }
 
-    // POST: api/reservations/complete/{id}
+    // =====================================================================
+    // POST: api/reservations/complete/{id}?finalAmount=100
+    // ✅ CORRIGIDO: usa comissão DO PLANO do restaurante, não 10% fixo
+    // =====================================================================
     [HttpPost("complete/{id}")]
     public async Task<IActionResult> CompleteReservation(int id, [FromQuery] decimal finalAmount)
     {
-        // 1. Encontra a reserva
         var reservation = await _context.Reservations.FindAsync(id);
-
         if (reservation == null) return NotFound("Reserva não encontrada.");
 
-        if (reservation.Status == "Completed")
+        if (reservation.Status == "Concluída")
             return BadRequest("Esta reserva já foi finalizada.");
 
-        reservation.Status = "Completed";
-        decimal platformCommission = finalAmount * 0.10m; // 10%
+        // ✅ Buscar comissão do plano ativo do restaurante
+        var subscription = await _context.RestaurantSubscriptions
+            .Include(s => s.Plan)
+            .Where(s => s.RestaurantId == reservation.RestaurantId && s.IsActive == true)
+            .FirstOrDefaultAsync();
+
+        // Se não tiver plano ativo, usa 10% como fallback
+        decimal commissionRate = subscription?.Plan?.ReservationCommission ?? 10m;
+        decimal platformCommission = finalAmount * (commissionRate / 100m);
+
+        reservation.Status = "Concluída";
 
         var earning = new PlatformEarning
         {
@@ -110,13 +115,15 @@ public class ReservationsController : ControllerBase
         };
 
         _context.PlatformEarnings.Add(earning);
-
         await _context.SaveChangesAsync();
 
         return Ok(new
         {
             Message = "Reserva concluída com sucesso.",
-            PlatformProfit = platformCommission
+            FinalAmount = finalAmount,
+            CommissionRate = commissionRate,
+            PlatformProfit = platformCommission,
+            RestaurantNet = finalAmount - platformCommission
         });
     }
 }

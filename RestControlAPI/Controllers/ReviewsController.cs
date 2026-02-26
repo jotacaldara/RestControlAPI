@@ -66,7 +66,7 @@ namespace RestControlAPI.Controllers
                 .OrderByDescending(r => r.CreatedAt)
                 .Select(r => new ReviewDTO
                 {
-                    Id = r.Id, 
+                    ReviewId = r.Id, 
                     UserName = r.User != null ? r.User.FullName : "Usuário Anônimo",
                     Rating = r.Rating,
                     Comment = r.Comment,
@@ -98,5 +98,7 @@ namespace RestControlAPI.Controllers
 
             return Ok(new { message = "Resposta publicada com sucesso!" });
         }
+
+
     }
 }

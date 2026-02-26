@@ -415,7 +415,7 @@ namespace RestControlAPI.Controllers
                     CategoryId = dto.CategoryId,
                     Name = dto.Name,
                     Description = dto.Description,
-                    Price = dto.Price,
+                    Price = (decimal)dto.Price,
                     IsAvailable = dto.IsAvailable
                 };
 
@@ -442,7 +442,7 @@ namespace RestControlAPI.Controllers
                 product.CategoryId = dto.CategoryId;
                 product.Name = dto.Name;
                 product.Description = dto.Description;
-                product.Price = dto.Price;
+                product.Price = (decimal)dto.Price;
                 product.IsAvailable = dto.IsAvailable;
 
                 await _context.SaveChangesAsync();

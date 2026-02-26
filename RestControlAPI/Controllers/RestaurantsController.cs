@@ -20,10 +20,10 @@ public class RestaurantsController : ControllerBase
     {
         try
         {
-            var query = _context.Restaurants
+            var query = _context.Restaurants.Where(r => r.IsActive == true)
                 .Include(r => r.RestaurantImages)
                 .AsNoTracking() 
-                .AsQueryable();
+                .AsQueryable() ;
 
             if (!string.IsNullOrWhiteSpace(city))
             {
@@ -54,7 +54,7 @@ public class RestaurantsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<RestaurantDetailDto>> GetRestaurantDetails(int id)
     {
-        var restaurant = await _context.Restaurants
+        var restaurant = await _context.Restaurants.Where(r => r.RestaurantId == id && r.IsActive == true)
             .Include(r => r.RestaurantImages)
             .Include(r => r.Categories) // Categorias do Menu
                 .ThenInclude(c => c.Products) // Produtos dentro das Categorias

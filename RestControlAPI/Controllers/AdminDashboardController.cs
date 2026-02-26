@@ -36,37 +36,99 @@ namespace RestControlAPI.Controllers
             return Ok(stats);
         }
 
-        // GET: api/admin/admindashboard/pending-restaurants
         [HttpGet("pending-restaurants")]
-        public async Task<IActionResult> GetPending()
+        public async Task<IActionResult> GetPendingRestaurants()
         {
             var pending = await _context.Restaurants
                 .Include(r => r.Owner)
-                .Where(r => r.IsActive == false || r.IsActive == null)
-                .Select(r => new AdminRestaurantDTO
+                .Where(r => r.IsActive == false) 
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
                 {
-                    Id = r.RestaurantId,
-                    Name = r.Name,
-                    OwnerName = r.Owner != null ? r.Owner.FullName : "Sem Dono",
-                    IsActive = false
+                    RestaurantId = r.RestaurantId,
+                    RestaurantName = r.Name,
+                    Description = r.Description,
+                    Address = r.Address,
+                    City = r.City,
+                    Phone = r.Phone,
+                    Email = r.Email,
+                    OwnerName = r.Owner.FullName,
+                    OwnerEmail = r.Owner.Email,
+                    OwnerPhone = r.Owner.Phone,
+                    CreatedAt = r.CreatedAt,
+                    DaysWaiting = r.CreatedAt.HasValue
+                        ? (DateTime.Now - r.CreatedAt.Value).Days
+                        : 0
                 })
                 .ToListAsync();
 
             return Ok(pending);
         }
 
-        // POST: api/admin/admindashboard/approve/5
-        [HttpPost("approve/{id}")]
+
+
+        [HttpPost("pending-restaurants/{id}/approve")]
         public async Task<IActionResult> ApproveRestaurant(int id)
         {
-            var restaurant = await _context.Restaurants.FindAsync(id);
-            if (restaurant == null) return NotFound();
+            var restaurant = await _context.Restaurants
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.RestaurantId == id);
+
+            if (restaurant == null)
+                return NotFound(new { message = "Restaurante não encontrado." });
+
+            if (restaurant.IsActive == true)
+                return BadRequest(new { message = "Restaurante já está ativo." });
 
             restaurant.IsActive = true;
-            await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Restaurante aprovado e ativo na plataforma." });
+            if (restaurant.Owner != null)
+            {
+                restaurant.Owner.IsActive = true;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Restaurante aprovado com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Erro: {ex.Message}" });
+            }
         }
+
+        [HttpPost("pending-restaurants/{id}/reject")]
+        public async Task<IActionResult> RejectRestaurant(int id, [FromBody] RejectReasonDto dto)
+        {
+            var restaurant = await _context.Restaurants
+                .Include(r => r.Owner)
+                .FirstOrDefaultAsync(r => r.RestaurantId == id);
+
+            if (restaurant == null)
+                return NotFound(new { message = "Restaurante não encontrado." });
+
+            try
+            {
+                var owner = restaurant.Owner;
+
+                _context.Restaurants.Remove(restaurant);
+
+                if (owner != null)
+                {
+                    _context.Users.Remove(owner);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Pedido rejeitado e eliminado." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Erro: {ex.Message}" });
+            }
+        }
+    
 
         // GET: api/admin/admindashboard/revenue-data
         [HttpGet("revenue-data")]
@@ -141,5 +203,13 @@ namespace RestControlAPI.Controllers
                 ByMonth = earningsByMonth
             });
         }
+
+        public class RejectReasonDto
+        {
+            public string Reason { get; set; }
+        }
+
+
     }
+
 }

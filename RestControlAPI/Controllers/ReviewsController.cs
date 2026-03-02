@@ -25,10 +25,10 @@ namespace RestControlAPI.Controllers
 
             if (reservation == null)
                 return NotFound("Reserva não encontrada.");
-
-            if (reservation.Status != "Confirmada" || reservation.ReservationDate > DateTime.Now)
+             
+            if (reservation.Status != "Confirmada" || reservation.Status != "Confirmed")
             {
-                return BadRequest("Você só pode avaliar após a data da reserva confirmada.");
+                return BadRequest("Você só pode avaliar após a ter confirmado a reserva.");
             }
 
             // Verifica se já avaliou
@@ -68,7 +68,7 @@ namespace RestControlAPI.Controllers
                 {
                     ReviewId = r.Id, 
                     UserName = r.User != null ? r.User.FullName : "Usuário Anônimo",
-                    Rating = r.Rating,
+                    Rating = (int)r.Rating,
                     Comment = r.Comment,
                     Date = r.CreatedAt.ToString(),
                     Reply = r.Reply,  

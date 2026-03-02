@@ -9,7 +9,7 @@ public partial class Review
 {
     public int Id { get; set; }
 
-    public int Rating { get; set; }
+    public int? Rating { get; set; }
 
     public string Comment { get; set; }
 
@@ -22,6 +22,7 @@ public partial class Review
     public int? ReservationId { get; set; }
 
     public string Reply { get; set; }
+
     public DateTime? RepliedAt { get; set; }
 
     public virtual Reservation Reservation { get; set; }

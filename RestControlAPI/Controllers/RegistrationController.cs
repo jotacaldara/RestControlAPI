@@ -18,23 +18,28 @@ namespace RestControlAPI.Controllers
 
         // POST: api/registration/restaurant
         [HttpPost("restaurant")]
-        public async Task<IActionResult> RegisterRestaurant([FromBody] RestaurantRegistrationDTO dto)
+        public async Task<IActionResult> RegisterRestaurant([FromBody] RestaurantRegistrationApiDTO dto)
         {
-            // Validação: Email já existe?
+            // PlanId existe?
+            var plan = await _context.Plans.FindAsync(dto.PlanId);
+            if (plan == null)
+                return BadRequest(new { message = "Plano inválido." });
+
+            // Email já existe?
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == dto.OwnerEmail);
 
             if (existingUser != null)
                 return BadRequest(new { message = "Este email já está registado." });
 
-            // Buscar Role "Owner" (RoleId = 2)
+            // Buscar Role "Owner" 
             var ownerRole = await _context.Roles
                 .FirstOrDefaultAsync(r => r.Name == "Owner");
 
             if (ownerRole == null)
                 return StatusCode(500, new { message = "Erro: Role 'Owner' não encontrada." });
 
-            //Criar user Owner que esta pendente
+            //Criar user Owner PENDENTE
             var newOwner = new User
             {
                 FullName = dto.OwnerName,
@@ -42,7 +47,7 @@ namespace RestControlAPI.Controllers
                 Phone = dto.OwnerPhone,
                 PasswordHash = dto.Password, 
                 RoleId = ownerRole.RoleId,
-                IsActive = false,
+                IsActive = false, 
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -65,52 +70,30 @@ namespace RestControlAPI.Controllers
             _context.Restaurants.Add(newRestaurant);
             await _context.SaveChangesAsync();
 
+
+   
+            var pendingSubscription = new RestaurantSubscription
+            {
+                RestaurantId = newRestaurant.RestaurantId,
+                PlanId = dto.PlanId,
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow), 
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)), 
+                IsActive = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.RestaurantSubscriptions.Add(pendingSubscription);
+            await _context.SaveChangesAsync();
+
             return Ok(new
             {
                 message = "Pedido submetido com sucesso! Aguarde aprovação do administrador.",
                 restaurantId = newRestaurant.RestaurantId,
-                ownerId = newOwner.UserId
+                ownerId = newOwner.UserId,
+                planId = dto.PlanId
             });
         }
     }
 
+  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

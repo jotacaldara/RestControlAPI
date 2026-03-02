@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestControlAPI.DTOs;
 using RestControlAPI.Models;
@@ -7,8 +8,8 @@ using System.Globalization;
 
 namespace RestControlAPI.Controllers
 {
-    // Controllers/SubscriptionsController.cs
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
     [ApiController]
     public class SubscriptionsController : ControllerBase
     {
@@ -47,10 +48,6 @@ namespace RestControlAPI.Controllers
             return Ok(result);
         }
 
-        // ======================================================================
-        // GET: api/subscriptions/all
-        // Todas as subscrições (Admin)
-        // ======================================================================
         [HttpGet("all")]
         public async Task<IActionResult> GetAllSubscriptions()
         {
@@ -84,10 +81,6 @@ namespace RestControlAPI.Controllers
             return Ok(result);
         }
 
-        // ======================================================================
-        // POST: api/subscriptions/renew/{subscriptionId}
-        // Renovar subscrição por +30 dias (Admin)
-        // ======================================================================
         [HttpPost("renew/{subscriptionId}")]
         public async Task<IActionResult> RenewSubscription(int subscriptionId)
         {
@@ -130,10 +123,6 @@ namespace RestControlAPI.Controllers
             });
         }
 
-        // ======================================================================
-        // POST: api/subscriptions/notify/{subscriptionId}
-        // Enviar email de lembrete de pagamento (Admin)
-        // ======================================================================
         [HttpPost("notify/{subscriptionId}")]
         public async Task<IActionResult> SendNotification(int subscriptionId)
         {
@@ -161,18 +150,14 @@ namespace RestControlAPI.Controllers
             }
         }
 
-        // ======================================================================
-        // GET: api/subscriptions/earnings
-        // Ganhos totais da plataforma: mensalidades + comissões de reservas
-        // ======================================================================
+        
         [HttpGet("earnings")]
         public async Task<IActionResult> GetPlatformEarnings()
         {
-            // --- COMISSÕES DE RESERVAS (tabela PlatformEarnings) ---
             var totalReservationCommissions = await _context.PlatformEarnings
                 .SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
-            // --- RECEITA DE MENSALIDADES (subscrições ativas) ---
+          
             // Conta meses desde inicio × preço do plano
             var subscriptions = await _context.RestaurantSubscriptions
                 .Include(s => s.Plan)
@@ -196,10 +181,8 @@ namespace RestControlAPI.Controllers
                 totalSubscriptionRevenue += s.Plan.MonthlyPrice * months;
             }
 
-            // TOTAL GERAL
             var totalEarnings = totalReservationCommissions + totalSubscriptionRevenue;
 
-            // --- GANHOS POR RESTAURANTE (comissões de reservas) ---
             var byRestaurantRaw = await _context.PlatformEarnings
                 .Include(e => e.Restaurant)
                 .ToListAsync();
@@ -215,7 +198,7 @@ namespace RestControlAPI.Controllers
                 .OrderByDescending(x => x.TotalEarnings)
                 .ToList();
 
-            // --- GANHOS POR MÊS (últimos 6 meses - comissões de reservas) ---
+            //ultimos 6 meses de ganho
             var sixMonthsAgo = DateTime.Now.AddMonths(-6);
             var rawMonthly = await _context.PlatformEarnings
                 .Where(e => e.CreatedAt != null && e.CreatedAt >= sixMonthsAgo)

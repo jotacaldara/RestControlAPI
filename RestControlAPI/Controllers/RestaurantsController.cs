@@ -52,7 +52,7 @@ public class RestaurantsController : ControllerBase
 
     // GET: api/restaurants/5 (Detalhes com Menu)
     [HttpGet("{id}")]
-    public async Task<ActionResult<RestaurantDetailDto>> GetRestaurantDetails(int id)
+    public async Task<ActionResult<RestaurantDetailDTO>> GetRestaurantDetails(int id)
     {
         var restaurant = await _context.Restaurants.Where(r => r.RestaurantId == id && r.IsActive == true)
             .Include(r => r.RestaurantImages)
@@ -61,13 +61,13 @@ public class RestaurantsController : ControllerBase
             .FirstOrDefaultAsync(r => r.RestaurantId == id);
 
         var reviews = await _context.Reviews.Where(r => r.RestaurantId == id).ToListAsync();
-        double average = reviews.Any() ? reviews.Average(r => r.Rating) : 0;
+        double average = (double)(reviews.Any() ? reviews.Average(r => r.Rating) : 0);
         int total = reviews.Count;
 
         if (restaurant == null) return NotFound();
 
         // Mapeamento manual para o DTO
-        var dto = new RestaurantDetailDto
+        var dto = new RestaurantDetailDTO
         {
             Id = restaurant.RestaurantId,
             Name = restaurant.Name,
@@ -105,8 +105,8 @@ public class RestaurantsController : ControllerBase
     }
 
     // PUT para editar informações básicas do restaurante (Admin)
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutRestaurant(int id, RestaurantDetailDto dto)
+    [HttpPut("edit/{id}")]
+    public async Task<IActionResult> PutRestaurant(int id, RestaurantDetailDTO dto)
     {
         if (id != dto.Id) return BadRequest();
 
@@ -132,4 +132,6 @@ public class RestaurantsController : ControllerBase
             return StatusCode(500, "Erro ao atualizar no banco de dados.");
         }
     }
+
+  
 }

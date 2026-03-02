@@ -1,6 +1,6 @@
 ﻿namespace RestControlAPI.DTOs
 {
-    public class RestaurantRegistrationDTO
+    public class RestaurantRegistrationApiDTO
     {
         public string OwnerName { get; set; }
         public string OwnerEmail { get; set; }
@@ -12,5 +12,11 @@
         public string City { get; set; }
         public string RestaurantPhone { get; set; }
         public string RestaurantEmail { get; set; }
+        public int PlanId { get; set; }
+    }
+
+    public class ApproveRestaurantDto
+    {
+        public int PlanId { get; set; } //Fallback
     }
 }

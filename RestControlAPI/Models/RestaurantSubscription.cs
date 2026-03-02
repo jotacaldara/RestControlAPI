@@ -19,6 +19,8 @@ public partial class RestaurantSubscription
 
     public bool? IsActive { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
     public virtual Plan Plan { get; set; }
 
     public virtual Restaurant Restaurant { get; set; }

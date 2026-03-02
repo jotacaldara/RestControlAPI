@@ -41,7 +41,6 @@ public class ProductsController : ControllerBase
         var product = await _context.Products.FindAsync(id);
         if (product == null) return NotFound();
 
-        // Inverte o status atual
         product.IsAvailable = !(product.IsAvailable ?? true);
 
         await _context.SaveChangesAsync();
@@ -78,11 +77,11 @@ public class ProductsController : ControllerBase
         var product = await _context.Products.FindAsync(id);
         if (product == null) return NotFound();
 
-        // Atualiza os dados
         product.Name = dto.Name;
         product.Description = dto.Description;
-        product.Price = dto.Price; // Garante que o decimal é salvo
+        product.Price = dto.Price;
         product.CategoryId = dto.CategoryId;
+        product.IsAvailable = dto.IsAvailable; // FIX: estava em falta!
 
         await _context.SaveChangesAsync();
         return NoContent();

@@ -13,4 +13,9 @@ namespace RestControlAPI.DTOs
         [JsonPropertyName("isReviewed")]
         public bool IsReviewed { get; set; }
     }
+
+    public class UpdateStatusDTO
+    {
+        public string Status { get; set; }
+    }
 }

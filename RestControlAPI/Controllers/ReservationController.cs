@@ -1,7 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RestControlAPI.Controllers;
 using RestControlAPI.DTOs;
 using RestControlAPI.Models;
+
+// =====================================================================
+// CLIENT-FACING RESERVATIONS API CONTROLLER
+// Status standard: "Pending" | "Confirmed" | "Canceled"
+//
+// JSON keys returned by GetUserReservations MUST match the
+// [JsonPropertyName] attributes in the client's ReservationListDTO:
+//   reservationId, restaurantName, date, people, status, isReviewed
+// =====================================================================
 
 [Route("api/[controller]")]
 [ApiController]
@@ -14,6 +24,7 @@ public class ReservationsController : ControllerBase
         _context = context;
     }
 
+    // POST: api/reservations
     [HttpPost]
     public async Task<IActionResult> CreateReservation(CreateReservationDTO dto)
     {
@@ -23,7 +34,7 @@ public class ReservationsController : ControllerBase
         var existingReservations = await _context.Reservations
             .Where(r => r.RestaurantId == dto.RestaurantId
                    && r.ReservationDate == dto.ReservationDate
-                   && r.Status != "Cancelada")
+                   && r.Status != "Canceled")
             .CountAsync();
 
         if (existingReservations >= 20)
@@ -35,7 +46,7 @@ public class ReservationsController : ControllerBase
             CustomerId = dto.UserId,
             ReservationDate = dto.ReservationDate,
             NumberOfPeople = dto.NumberOfPeople,
-            Status = "Pendente",
+            Status = "Pending",
             CreatedAt = DateTime.Now
         };
 
@@ -46,6 +57,7 @@ public class ReservationsController : ControllerBase
     }
 
     // GET: api/reservations/user/5
+  
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserReservations(int userId)
     {
@@ -55,12 +67,12 @@ public class ReservationsController : ControllerBase
             .OrderByDescending(r => r.ReservationDate)
             .Select(r => new
             {
-                r.ReservationId,
-                RestaurantName = r.Restaurant.Name,
-                Date = r.ReservationDate,
-                People = r.NumberOfPeople,
-                Status = r.Status,
-                IsReviewed = _context.Reviews.Any(rev => rev.ReservationId == r.ReservationId)
+                reservationId = r.ReservationId,           
+                restaurantName = r.Restaurant.Name,         
+                date = r.ReservationDate,        
+                people = r.NumberOfPeople,        
+                status = r.Status,                
+                isReviewed = _context.Reviews.Any(rev => rev.ReservationId == r.ReservationId) 
             })
             .ToListAsync();
 
@@ -72,39 +84,40 @@ public class ReservationsController : ControllerBase
     public async Task<IActionResult> Cancel(int id)
     {
         var reservation = await _context.Reservations.FindAsync(id);
-        if (reservation == null) return NotFound();
+        if (reservation == null) return NotFound("Reserva não encontrada.");
 
-        reservation.Status = "Cancelada";
+        if (reservation.Status == "Canceled")
+            return BadRequest("Esta reserva já se encontra cancelada.");
+
+        if (reservation.Status == "Confirmed")
+            return BadRequest("Não é possível cancelar uma reserva já confirmada.");
+
+        reservation.Status = "Canceled";
         _context.Reservations.Update(reservation);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Reserva cancelada." });
+        return Ok(new { message = "Reserva cancelada com sucesso." });
     }
 
-    // =====================================================================
-    // POST: api/reservations/complete/{id}?finalAmount=100
-    // ✅ CORRIGIDO: usa comissão DO PLANO do restaurante, não 10% fixo
-    // =====================================================================
+    // POST: api/reservations/complete/{id}
     [HttpPost("complete/{id}")]
     public async Task<IActionResult> CompleteReservation(int id, [FromQuery] decimal finalAmount)
     {
         var reservation = await _context.Reservations.FindAsync(id);
         if (reservation == null) return NotFound("Reserva não encontrada.");
 
-        if (reservation.Status == "Concluída")
+        if (reservation.Status == "Confirmed")
             return BadRequest("Esta reserva já foi finalizada.");
 
-        // ✅ Buscar comissão do plano ativo do restaurante
         var subscription = await _context.RestaurantSubscriptions
             .Include(s => s.Plan)
             .Where(s => s.RestaurantId == reservation.RestaurantId && s.IsActive == true)
             .FirstOrDefaultAsync();
 
-        // Se não tiver plano ativo, usa 10% como fallback
         decimal commissionRate = subscription?.Plan?.ReservationCommission ?? 10m;
         decimal platformCommission = finalAmount * (commissionRate / 100m);
 
-        reservation.Status = "Concluída";
+        reservation.Status = "Confirmed";
 
         var earning = new PlatformEarning
         {

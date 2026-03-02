@@ -37,13 +37,14 @@ namespace RestControlAPI.Controllers
         }
 
         [HttpGet("pending-restaurants")]
-        public async Task<IActionResult> GetPendingRestaurants()
+        public async Task<ActionResult<IEnumerable<PendingRestaurantsDTO>>> GetPendingRestaurants()
         {
-            var pending = await _context.Restaurants
+            var pendingRestaurants = await _context.Restaurants
+                .Where(r => r.IsActive == false || r.IsActive == null)
                 .Include(r => r.Owner)
-                .Where(r => r.IsActive == false) 
-                .OrderByDescending(r => r.CreatedAt)
-                .Select(r => new
+                .Include(r => r.RestaurantSubscriptions)
+                    .ThenInclude(s => s.Plan)
+                .Select(r => new PendingRestaurantsDTO
                 {
                     RestaurantId = r.RestaurantId,
                     RestaurantName = r.Name,
@@ -52,27 +53,30 @@ namespace RestControlAPI.Controllers
                     City = r.City,
                     Phone = r.Phone,
                     Email = r.Email,
-                    OwnerName = r.Owner.FullName,
-                    OwnerEmail = r.Owner.Email,
-                    OwnerPhone = r.Owner.Phone,
+                    OwnerName = r.Owner != null ? r.Owner.FullName : "N/A",
+                    OwnerEmail = r.Owner != null ? r.Owner.Email : "N/A",
+                    OwnerPhone = r.Owner != null ? r.Owner.Phone : "N/A",
                     CreatedAt = r.CreatedAt,
-                    DaysWaiting = r.CreatedAt.HasValue
-                        ? (DateTime.Now - r.CreatedAt.Value).Days
-                        : 0
+                    DaysWaiting = (DateTime.UtcNow - (r.CreatedAt ?? DateTime.UtcNow)).Days,
+                    PlanId = r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false) != null ? r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false).PlanId : 0,
+                    PlanName = r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false) != null ? r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false).Plan.Name : "N/A",
+                    MonthlyPrice = r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false) != null ? r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false).Plan.MonthlyPrice : 0,
+                    CommissionRate = r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false) != null ? r.RestaurantSubscriptions.FirstOrDefault(s => s.IsActive == false).Plan.ReservationCommission : 0
                 })
                 .ToListAsync();
+            return Ok(pendingRestaurants);
 
-            return Ok(pending);
         }
 
 
 
         [HttpPost("pending-restaurants/{id}/approve")]
-        public async Task<IActionResult> ApproveRestaurant(int id)
+        public async Task<IActionResult> ApproveRestaurant(int id, [FromBody] ApproveRestaurantDto dto)
         {
             var restaurant = await _context.Restaurants
-                .Include(r => r.Owner)
-                .FirstOrDefaultAsync(r => r.RestaurantId == id);
+                 .Include(r => r.Owner)
+                 .Include(r => r.RestaurantSubscriptions)
+                 .FirstOrDefaultAsync(r => r.RestaurantId == id);
 
             if (restaurant == null)
                 return NotFound(new { message = "Restaurante não encontrado." });
@@ -80,17 +84,49 @@ namespace RestControlAPI.Controllers
             if (restaurant.IsActive == true)
                 return BadRequest(new { message = "Restaurante já está ativo." });
 
-            restaurant.IsActive = true;
-
-            if (restaurant.Owner != null)
-            {
-                restaurant.Owner.IsActive = true;
-            }
 
             try
             {
+                restaurant.IsActive = true;
+
+                if (restaurant.Owner != null)
+                {
+                    restaurant.Owner.IsActive = true;
+                }
+
+                var pendingSubscription = restaurant.RestaurantSubscriptions
+                    .FirstOrDefault(s => s.IsActive == false);
+
+                if (pendingSubscription != null)
+                {
+                    pendingSubscription.IsActive = true;
+                    pendingSubscription.StartDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                    pendingSubscription.EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1));
+                }
+                else
+                {
+                    //Fallback: Se não existe subscription pendente, cria uma nova
+                    var planId = dto.PlanId > 0 ? dto.PlanId : 2; 
+
+                    var newSubscription = new RestaurantSubscription
+                    {
+                        RestaurantId = restaurant.RestaurantId,
+                        PlanId = planId,
+                        StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                        EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _context.RestaurantSubscriptions.Add(newSubscription);
+                }
+
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Restaurante aprovado com sucesso!" });
+
+                return Ok(new
+                {
+                    message = "Restaurante aprovado com sucesso! Subscription ativada."
+                });
             }
             catch (Exception ex)
             {
@@ -103,6 +139,7 @@ namespace RestControlAPI.Controllers
         {
             var restaurant = await _context.Restaurants
                 .Include(r => r.Owner)
+                .Include(r => r.RestaurantSubscriptions)
                 .FirstOrDefaultAsync(r => r.RestaurantId == id);
 
             if (restaurant == null)
@@ -112,6 +149,15 @@ namespace RestControlAPI.Controllers
             {
                 var owner = restaurant.Owner;
 
+                // Eliminar subscription pendente
+                var pendingSubscription = restaurant.RestaurantSubscriptions
+                    .FirstOrDefault(s => s.IsActive == false);
+
+                if (pendingSubscription != null)
+                {
+                    _context.RestaurantSubscriptions.Remove(pendingSubscription);
+                }
+
                 _context.Restaurants.Remove(restaurant);
 
                 if (owner != null)
@@ -120,6 +166,9 @@ namespace RestControlAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                // TODO: Enviar email de rejeição
+                // await _emailService.SendRejectionEmailAsync(owner.Email, restaurant.Name, dto.Reason);
 
                 return Ok(new { message = "Pedido rejeitado e eliminado." });
             }

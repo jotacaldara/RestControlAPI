@@ -228,6 +228,8 @@ public partial class nextlayerapps_SampleDBContext : DbContext
         {
             entity.HasKey(e => e.RestaurantId).HasName("PK__Restaura__87454C9522BC798C");
 
+            entity.HasIndex(e => e.IsActive, "IX_Restaurants_IsActive");
+
             entity.Property(e => e.Address).HasMaxLength(250);
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CreatedAt)
@@ -265,6 +267,11 @@ public partial class nextlayerapps_SampleDBContext : DbContext
         {
             entity.HasKey(e => e.SubscriptionId).HasName("PK__Restaura__9A2B249D6B52EA3C");
 
+            entity.HasIndex(e => e.IsActive, "IX_RestaurantSubscriptions_IsActive");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
 
             entity.HasOne(d => d.Plan).WithMany(p => p.RestaurantSubscriptions)
@@ -284,6 +291,10 @@ public partial class nextlayerapps_SampleDBContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.RepliedAt).HasColumnType("datetime");
+            entity.Property(e => e.Reply)
+                .HasMaxLength(50)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.Reservation).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.ReservationId)
@@ -340,6 +351,8 @@ public partial class nextlayerapps_SampleDBContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CE7539850");
+
+            entity.HasIndex(e => e.IsActive, "IX_Users_IsActive");
 
             entity.HasIndex(e => e.Email, "UQ__Users__A9D10534FCEF861A").IsUnique();
 

@@ -20,13 +20,12 @@ namespace RestControlAPI.Controllers
         public async Task<IActionResult> PostReview(CreateReviewDTO dto)
         {
             var reservation = await _context.Reservations
-                .Include(r => r.Restaurant)
-                .FirstOrDefaultAsync(r => r.ReservationId == dto.ReservationId);
+                .FirstOrDefaultAsync(r => r.ReservationId == dto.ReservationId && r.RestaurantId == dto.RestaurantId);
 
             if (reservation == null)
                 return NotFound("Reserva não encontrada.");
              
-            if (reservation.Status != "Confirmada" || reservation.Status != "Confirmed")
+            if (reservation.Status != "Confirmed")
             {
                 return BadRequest("Você só pode avaliar após a ter confirmado a reserva.");
             }
@@ -96,7 +95,8 @@ namespace RestControlAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Resposta publicada com sucesso!" });
+            return Ok(new { message = "Resposta publicada com" +
+                " sucesso!" });
         }
 
 

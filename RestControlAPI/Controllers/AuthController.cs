@@ -48,7 +48,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // 1. Validar entrada
+            // Validar entrada
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             {
                 return BadRequest(new { message = "E-mail e senha são obrigatórios." });
@@ -63,7 +63,6 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "E-mail ou senha inválidos." });
             }
 
-            // 3. Verificar senha
             bool senhaValida = VerificarSenha(request.Password, user.PasswordHash);
 
             if (!senhaValida)
@@ -71,7 +70,7 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "E-mail ou senha inválidos." });
             }
 
-            // 4. Se for Owner, buscar o RestaurantId
+            // Se for Owner, buscar o RestaurantId
             int? restaurantId = null;
 
             if (user.Role != null && user.Role.Name == "Owner")
@@ -81,14 +80,13 @@ public class AuthController : ControllerBase
                     .Select(r => r.RestaurantId)
                     .FirstOrDefaultAsync();
 
-                // Se não encontrar restaurante, restaurant será 0 
                 restaurantId = restaurant == 0 ? null : restaurant;
             }
 
-            // 5. Gerar o Token JWT
+            // Gerar o Token JWT
             string token = _jwtTokenService.GenerateToken(user, restaurantId);
 
-            // 6. Retornar resposta
+            // Retornar resposta
             var response = new LoginResponseDTO
             {
                 Token = token,
@@ -108,7 +106,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    [Authorize] // Apenas usuários logados podem invalidar sua sessão
+    [Authorize] 
     public IActionResult Logout()
     {
 

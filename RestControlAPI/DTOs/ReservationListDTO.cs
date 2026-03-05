@@ -4,6 +4,8 @@ namespace RestControlAPI.DTOs
 {
     public class ReservationListDTO
     {
+
+        public int RestaurantId { get; set; }
         public int ReservationId { get; set; }
         public string RestaurantName { get; set; } = string.Empty;
         public DateTime ReservationDate { get; set; }

@@ -36,8 +36,7 @@ namespace RestControlAPI.Controllers
                 return Ok(plans);
             }
 
-            // POST: api/plans/{id}
-            [HttpPost("{id}")]
+            [HttpPut("{id}")]
             public async Task<IActionResult> UpdatePlan(int id, [FromBody] Plan updatedPlan)
             {
                 var plan = await _context.Plans.FindAsync(id);

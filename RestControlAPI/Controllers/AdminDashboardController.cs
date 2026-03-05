@@ -105,7 +105,7 @@ namespace RestControlAPI.Controllers
                 }
                 else
                 {
-                    //Fallback: Se não existe subscription pendente, cria uma nova
+                    //Fallback
                     var planId = dto.PlanId > 0 ? dto.PlanId : 2; 
 
                     var newSubscription = new RestaurantSubscription
@@ -167,9 +167,6 @@ namespace RestControlAPI.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // TODO: Enviar email de rejeição
-                // await _emailService.SendRejectionEmailAsync(owner.Email, restaurant.Name, dto.Reason);
-
                 return Ok(new { message = "Pedido rejeitado e eliminado." });
             }
             catch (Exception ex)
@@ -179,7 +176,6 @@ namespace RestControlAPI.Controllers
         }
     
 
-        // GET: api/admin/admindashboard/revenue-data
         [HttpGet("revenue-data")]
         public async Task<IActionResult> GetRevenueData()
         {
@@ -205,8 +201,6 @@ namespace RestControlAPI.Controllers
 
             return Ok(chartData);
         }
-
-        // RestControlAPI/Controllers/AdminController.cs
 
         [HttpGet("api/admin/earnings")]
         [Authorize(Roles = "Admin")]

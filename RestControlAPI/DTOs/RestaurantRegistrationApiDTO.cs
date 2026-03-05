@@ -13,9 +13,17 @@
         public string RestaurantPhone { get; set; }
         public string RestaurantEmail { get; set; }
         public int PlanId { get; set; }
-    }
 
-    public class ApproveRestaurantDto
+        public TimeOnly OpeningTime { get; set; }
+
+        public TimeOnly ClosingTime { get; set; }
+
+        public int MaxTables { get; set; }
+
+        public int MaxSeats { get; set; }
+    }
+    
+public class ApproveRestaurantDto
     {
         public int PlanId { get; set; } //Fallback
     }

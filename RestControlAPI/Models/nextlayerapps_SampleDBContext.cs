@@ -232,6 +232,7 @@ public partial class nextlayerapps_SampleDBContext : DbContext
 
             entity.Property(e => e.Address).HasMaxLength(250);
             entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.ClosingTime).HasPrecision(0);
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
@@ -241,6 +242,7 @@ public partial class nextlayerapps_SampleDBContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(150);
+            entity.Property(e => e.OpeningTime).HasPrecision(0);
             entity.Property(e => e.Phone).HasMaxLength(30);
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Restaurants)

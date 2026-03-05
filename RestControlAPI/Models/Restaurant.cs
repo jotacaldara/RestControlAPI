@@ -27,6 +27,14 @@ public partial class Restaurant
 
     public DateTime? CreatedAt { get; set; }
 
+    public TimeOnly OpeningTime { get; set; }
+
+    public TimeOnly ClosingTime { get; set; }
+
+    public int MaxTables { get; set; }
+
+    public int MaxSeats { get; set; }
+
     public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
@@ -48,4 +56,5 @@ public partial class Restaurant
     public virtual ICollection<Staff> Staff { get; set; } = new List<Staff>();
 
     public virtual ICollection<Table> Tables { get; set; } = new List<Table>();
+
 }

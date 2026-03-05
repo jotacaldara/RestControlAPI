@@ -52,7 +52,7 @@ namespace RestControlAPI.Controllers
                 .Where(r => r.RestaurantId == restaurantId)
                 .CountAsync();
 
-            // Reservas pendentes — FIX: was "Pendente", standard is "Pending"
+            // Reservas pendentes 
             var pendingReservations = await _context.Reservations
                 .Where(r => r.RestaurantId == restaurantId && r.Status == "Pending")
                 .CountAsync();
@@ -71,7 +71,7 @@ namespace RestControlAPI.Controllers
                 AverageAsync(rev => (double)rev.Rating)
                 : 0.0;
 
-            // FATURAMENTO - Calcular receita total
+            // Calcular receita total
             var totalRevenue = await _context.Orders
                     .Where(o => o.RestaurantId == restaurantId)
                     .SelectMany(o => o.Payments)
@@ -82,11 +82,11 @@ namespace RestControlAPI.Controllers
                 .Where(e => e.RestaurantId == restaurantId)
                 .SumAsync(e => e.Amount);
 
-            // Receita líquida (depois das comissões)
+            // Receita líquida
             var netRevenue = totalRevenue - totalCommissions;
 
 
-            // SUBSCRIÇÃO ATIVA
+            // SUBSCRIÇÃO
             var subscription = await _context.RestaurantSubscriptions
                 .Include(s => s.Plan)
                 .Where(s => s.RestaurantId == restaurantId && s.IsActive == true)
@@ -119,14 +119,14 @@ namespace RestControlAPI.Controllers
                 City = restaurant.City,
                 TotalReservations = totalReservations,
                 PendingReservations = pendingReservations,
-                AverageRating = averageRating, // Implementar reviews depois
+                AverageRating = averageRating,
                 TotalReviews = totalReviews,
                 TotalProducts = totalProducts,
-                // Faturamento
+              
                 TotalRevenue = totalRevenue,
                 TotalCommissions = totalCommissions,
                 NetRevenue = netRevenue,
-                // Subscrição
+              
                 Subscription = subscriptionData
             });
         }

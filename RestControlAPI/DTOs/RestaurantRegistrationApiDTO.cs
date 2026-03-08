@@ -1,0 +1,30 @@
+﻿namespace RestControlAPI.DTOs
+{
+    public class RestaurantRegistrationApiDTO
+    {
+        public string OwnerName { get; set; }
+        public string OwnerEmail { get; set; }
+        public string OwnerPhone { get; set; }
+        public string Password { get; set; }
+        public string RestaurantName { get; set; }
+        public string Description { get; set; }
+        public string Address { get; set; }
+        public string City { get; set; }
+        public string RestaurantPhone { get; set; }
+        public string RestaurantEmail { get; set; }
+        public int PlanId { get; set; }
+
+        public TimeOnly OpeningTime { get; set; }
+
+        public TimeOnly ClosingTime { get; set; }
+
+        public int MaxTables { get; set; }
+
+        public int MaxSeats { get; set; }
+    }
+    
+public class ApproveRestaurantDto
+    {
+        public int PlanId { get; set; } //Fallback
+    }
+}
